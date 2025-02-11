@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>AI Chatbot</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    /* 🌙 Dark Mode Styles with Improved Message Boxes */
+    body {
+      font-family: 'Arial', sans-serif;
+      background-color: #121212;
+      color: #FFFFFF;
+      margin: 0;
+      padding: 0;
+    }
+    #chat-container {
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+    }
+    #header {
+      background-color: #1F1F1F;
+      padding: 15px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+    }
+    #header h1 {
+      margin: 0;
+      font-size: 24px;
+      color: #FFFFFF;
+    }
+    #model-selector {
+      padding: 10px;
+      background-color: #2C2C2C;
+      color: #FFFFFF;
+      border: none;
+      border-radius: 5px;
+      font-size: 16px;
+    }
+    #chatbox {
+      flex: 1;
+      background-color: #1F1F1F;
+      overflow-y: auto;
+      padding: 20px;
+    }
+    .message {
+      max-width: 75%;
+      padding: 12px 15px;
+      border-radius: 15px;
+      margin: 10px 0;
+      line-height: 1.5;
+      word-wrap: break-word;
+      display: flex;
+      align-items: center;
+      position: relative;
+      clear: both;
+    }
+    .user-message {
+      background-color: #0D47A1;
+      color: #FFFFFF;
+      float: right;
+      border-bottom-right-radius: 0;
+      flex-direction: row-reverse; /* Place user avatar on the right */
+    }
+    .bot-message {
+      background-color: #263238;
+      color: #FFFFFF;
+      float: left;
+      border-bottom-left-radius: 0;
+    }
+    .message-content {
+      font-size: 16px;
+      font-weight: normal;
+    }
+    .avatar {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      margin: 0 10px;
+    }
+    /* User avatar adjustments */
+    .user-avatar {
+      margin-left: 10px;
+    }
+    /* Bot avatar adjustments */
+    .bot-avatar {
+      margin-right: 10px;
+    }
+    #input-area {
+      display: flex;
+      padding: 15px;
+      background-color: #1F1F1F;
+      margin: 0 15px 15px;
+      border-radius: 15px;
+      box-shadow: 0 -2px 4px rgba(0, 0, 0, 0.3);
+    }
+    #user-input {
+      flex: 1;
+      padding: 12px 15px;
+      font-size: 20px;
+      border: 1px solid #2C2C2C;
+      border-radius: 5px;
+      background-color: #2C2C2C;
+      color: #FFFFFF;
+      box-sizing: border-box;
+    }
+    #send-button {
+      padding: 0 20px;
+      font-size: 18px;
+      margin-left: 10px;
+      cursor: pointer;
+      background-color: #00C853;
+      color: #FFFFFF;
+      border: none;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background-color 0.3s;
+    }
+    #send-button:hover {
+      background-color: #00E676;
+    }
+    /* Clear floats after messages */
+    #chatbox::after {
+      content: "";
+      clear: both;
+      display: table;
+    }
+    /* Scrollbar Styling */
+    #chatbox::-webkit-scrollbar {
+      width: 8px;
+    }
+    #chatbox::-webkit-scrollbar-thumb {
+      background-color: #424242;
+      border-radius: 4px;
+    }
+    #chatbox::-webkit-scrollbar-track {
+      background-color: #1F1F1F;
+    }
+    /* Typing Indicator Styles */
+    .typing {
+      display: flex;
+      align-items: center;
+    }
+    .typing .dot {
+      height: 8px;
+      width: 8px;
+      margin: 0 2px;
+      background-color: #FFFFFF;
+      border-radius: 50%;
+      display: inline-block;
+      animation: typing 1s infinite;
+    }
+    .typing .dot:nth-child(2) {
+      animation-delay: 0.2s;
+    }
+    .typing .dot:nth-child(3) {
+      animation-delay: 0.4s;
+    }
+    @keyframes typing {
+      0% { opacity: 0.2; }
+      20% { opacity: 1; }
+      100% { opacity: 0.2; }
+    }
+    /* Responsive Design */
+    @media (max-width: 600px) {
+      #header h1, #model-selector {
+        font-size: 18px;
+      }
+      .message-content {
+        font-size: 14px;
+      }
+      #user-input, #send-button {
+        font-size: 16px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div id="chat-container">
+    <!-- Header with Model Selector -->
+    <div id="header">
+      <h1>AI Chatbot Developed By Adil</h1>
+      <select id="model-selector">
+        <option value="gpt">GPT</option>
+        <option value="deepseek-chat">DeepSeek Chat</option>
+        <option value="deepseek-reasoner">DeepSeek Reasoner</option>
+      </select>
+    </div>
+    <!-- Chatbox -->
+    <div id="chatbox"></div>
+    <!-- Input Area -->
+    <div id="input-area">
+      <input type="text" id="user-input" placeholder="Type your message here..." autocomplete="off">
+      <button id="send-button">Send</button>
+    </div>
+  </div>
+
+  <script src="https://js.puter.com/v2/"></script>
+  <script>
+    // JavaScript Code to Handle Chat Functionality
+    const chatbox = document.getElementById('chatbox');
+    const userInput = document.getElementById('user-input');
+    const sendButton = document.getElementById('send-button');
+    const modelSelector = document.getElementById('model-selector');
+
+    // Initialize conversation history
+    let conversationHistory = [];
+
+    // Set default model
+    let selectedModel = 'gpt';
+
+    // Update selected model when changed
+    modelSelector.addEventListener('change', () => {
+      selectedModel = modelSelector.value;
+      // Clear conversation history when model is switched
+      conversationHistory = [];
+      appendMessage('bot', `Switched to ${modelSelector.options[modelSelector.selectedIndex].text} model.`);
+    });
+
+    // Function to append messages to the chatbox
+    function appendMessage(sender, text) {
+      const messageElement = document.createElement('div');
+      messageElement.classList.add('message', `${sender}-message`);
+
+      const avatarImg = document.createElement('img');
+      avatarImg.classList.add('avatar', `${sender}-avatar`);
+      avatarImg.src = sender === 'user' ? 'user.png' : 'bot.png';
+      avatarImg.alt = `${sender} avatar`;
+
+      const messageContent = document.createElement('div');
+      messageContent.classList.add('message-content');
+
+      if (text === 'Typing...') {
+        // Typing indicator
+        const typingIndicator = document.createElement('div');
+        typingIndicator.classList.add('typing');
+        for (let i = 0; i < 3; i++) {
+          const dot = document.createElement('div');
+          dot.classList.add('dot');
+          typingIndicator.appendChild(dot);
+        }
+        messageContent.appendChild(typingIndicator);
+      } else {
+        const messageText = document.createElement('span');
+        messageText.textContent = text;
+        messageContent.appendChild(messageText);
+      }
+
+      if (sender === 'user') {
+        // User message: content and avatar on the right
+        messageElement.appendChild(messageContent);
+        messageElement.appendChild(avatarImg);
+      } else {
+        // Bot message: avatar and content on the left
+        messageElement.appendChild(avatarImg);
+        messageElement.appendChild(messageContent);
+      }
+
+      chatbox.appendChild(messageElement);
+      chatbox.scrollTop = chatbox.scrollHeight; // Auto-scroll to the latest message
+    }
+
+    // Function to handle sending messages
+    async function sendMessage() {
+      const message = userInput.value.trim();
+      if (!message) return;
+
+      appendMessage('user', message);
+      conversationHistory.push(`User: ${message}`);
+      userInput.value = '';
+      userInput.focus();
+
+      // Display typing indicator
+      appendMessage('bot', 'Typing...');
+
+      // Combine the conversation history and send it to the AI
+      const prompt = conversationHistory.join('\n');
+
+      try {
+        let response = '';
+
+        if (selectedModel === 'gpt') {
+          // Use GPT model
+          const gptResponse = await puter.ai.chat(prompt);
+          response = gptResponse;
+        } else {
+          // Use DeepSeek models
+          const deepSeekResponse = await puter.ai.chat(prompt, { model: selectedModel, stream: true });
+          response = '';
+          for await (const part of deepSeekResponse) {
+            response += part?.text || '';
+          }
+        }
+
+        // Remove the typing indicator
+        chatbox.removeChild(chatbox.lastChild);
+
+        // Append the AI's response
+        appendMessage('bot', response);
+        conversationHistory.push(`Bot: ${response}`);
+
+      } catch (error) {
+        console.error('Error:', error);
+        chatbox.removeChild(chatbox.lastChild);
+        appendMessage('bot', 'Oops! Something went wrong.');
+      }
+    }
+
+    // Event listener for the send button
+    sendButton.addEventListener('click', sendMessage);
+
+    // Allow sending message on Enter key press
+    userInput.addEventListener('keypress', function(e) {
+      if (e.key === 'Enter') {
+        sendMessage();
+      }
+    });
+
+    // Add a welcome message when the page loads
+    window.onload = function() {
+      appendMessage('bot', 'Hello! How can I assist you today?');
+      userInput.focus();
+    };
+  </script>
+</body>
+</html>
